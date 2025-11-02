@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/a8m/envsubst"
@@ -17,8 +16,7 @@ type Request struct {
 }
 
 const (
-	KafkaEndpointHost = "KX_KAFKA_ENDPOINT_HOST"
-	KafkaEndpointPort = "KX_KAFKA_ENDPOINT_PORT"
+	KafkaBrokersEnv = "KX_KAFKA_BROKERS"
 )
 
 func getEnv(key string, def string) string {
@@ -41,15 +39,12 @@ func GetRequest() (*Request, error) {
 	if ctx.Error != nil {
 		return nil, ctx.Error
 	}
-	if args.Endpoint.Host == "" {
-		args.Endpoint.Host = getEnv(KafkaEndpointHost, "localhost")
+	if len(args.Brokers) == 0 {
+		brokersInfo := getEnv(KafkaBrokersEnv, "localhost:9092")
+		args.Brokers = strings.Split(brokersInfo, ",")
 	}
-
-	port := getEnv(KafkaEndpointPort, "9092")
-	if args.Endpoint.Port == 0 {
-		if parsed, err := strconv.ParseUint(port, 10, 16); err == nil {
-			args.Endpoint.Port = uint16(parsed)
-		}
+	for i := range len(args.Brokers) {
+		args.Brokers[i] = strings.TrimSpace(args.Brokers[i])
 	}
 	exreq, err := ReadExtractionRequest(args.Config)
 	if err != nil {
@@ -84,11 +79,8 @@ func GetRequest() (*Request, error) {
 }
 
 func validate(r *Request) error {
-	if r.Args.Endpoint.Host == "" {
-		return fmt.Errorf("invalid config: no host")
-	}
-	if r.Args.Endpoint.Port == 0 {
-		return fmt.Errorf("invalid config: invalid port")
+	if len(r.Args.Brokers) == 0 {
+		return fmt.Errorf("invalid config: no brokers")
 	}
 	if r.ExtractionRequest == nil {
 		return fmt.Errorf("invalid config: no extraction request")

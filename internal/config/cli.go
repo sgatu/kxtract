@@ -6,15 +6,11 @@ import (
 	"github.com/alecthomas/kong"
 )
 
-type EndpointInfo struct {
-	Host string
-	Port uint16
-}
 type CliArgs struct {
-	Config   string       `type:"existingfile" short:"c" help:"Configuration file containing topic, parsing, filtering and output details"`
-	Endpoint EndpointInfo `embed:"" prefix:"endpoint." help:"Kafka endpoint configuration"`
-	Version  bool
-	DryRun   bool
+	Config  string   `type:"existingfile" short:"c" help:"Configuration file containing topic, parsing, filtering and output details"`
+	Brokers []string `short:"b" sep:"," help:"Seed broker list to connect to kafka cluster, comma separated."`
+	Version bool
+	DryRun  bool
 }
 
 func (ca *CliArgs) AfterApply(ctx *kong.Context) error {
